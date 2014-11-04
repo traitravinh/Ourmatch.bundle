@@ -101,7 +101,6 @@ def Episodes(title, eplink, epthumb):
     for p in p_tag:
         ptext = BeautifulSoup(str(p)).p.contents[0]
         plink = BeautifulSoup(str(p)).p.next.next.next
-        Log(str(plink).find('dailymotion'))
 
         if str(plink).find('dailymotion')!=-1:
             plink = 'http:'+re.findall(RE_DAILY,str(plink))[0]
@@ -124,6 +123,8 @@ def Episodes(title, eplink, epthumb):
 
 @route('/video/ourmatch/createMediaObject')
 def createMediaObject(url, title,thumb,rating_key,include_container=False):
+    Log('<<PLAY VIDEO>> - '+title)
+    Log('<<VIDEO LINK>> - '+url)
     container = Container.MP4
     video_codec = VideoCodec.H264
     audio_codec = AudioCodec.AAC
@@ -175,7 +176,6 @@ def retrievVideoLink(url):
 
         if str(f4m_src).find('.f4m')!=-1:
             nlink = urllib2.urlopen(f4m_src).read()
-            Log(nlink)
             vCode = re.findall(RE_VCODE,nlink)
 
             if len(vCode)>1:
