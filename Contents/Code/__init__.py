@@ -147,7 +147,6 @@ def createMediaObject(url, title,thumb,rating_key,include_container=False):
                     PartObject(key=Callback(PlayVideo, url=url))
                 ],
                 container = container,
-                video_resolution = '720',
                 video_codec = video_codec,
                 audio_codec = audio_codec,
                 audio_channels = audio_channels,
@@ -168,25 +167,37 @@ def PlayVideo(url):
 
 def retrievVideoLink(url):
     try:
-        publisherId = RE_PUBID.search(url).group(1)
-        videoId = RE_VIDID.search(url).group(1)
-        f4m_link = playwire_base_url+'v2/' + str(publisherId)+'/config/'+str(videoId)+'.json'
-        link = urllib2.urlopen(f4m_link).read()
-        f4m_src = RE_SRC.search(link).group(1)
+        if str(url).find('data-publisher-id')!=-1:
+            publisherId = re.compile('data-publisher-id="(.+?)" data-video-id').findall(url)
+            videoId = re.compile('data-video-id="(.+?)"').findall(url)
 
-        if str(f4m_src).find('.f4m')!=-1:
-            nlink = urllib2.urlopen(f4m_src).read()
-            vCode = re.findall(RE_VCODE,nlink)
+            f4m_link = playwire_base_url+'v2/' + str(publisherId[0])+'/config/'+str(videoId[0])+'.json'
+            link = urllib2.urlopen(f4m_link).read()
+            f4m_src = re.compile('"src":"(.+?)"|\'').findall(str(link))
+            if str(f4m_src[0]).find('.f4m')!=-1:
+                nlink = urllib2.urlopen(f4m_src[0]).read()
+                vCode = re.compile('mp4:(.+?)" ').findall(str(nlink))
+                if len(vCode)>1:
+                    sCode = vCode[1]
+                else:
+                    sCode=vCode[0]
+                real_link = playwire_base_url+publisherId[0]+'/'+str(sCode)
+            elif str(f4m_src[0]).find('rtmp://streaming')!=-1:
+                real_link = str(f4m_src[0]).replace('rtmp://streaming','http://cdn').replace('mp4:','')
 
-            if len(vCode)>1:
-                sCode = vCode[1]
+            return real_link
+        else:
+            manifest_link = re.compile('data-config="(.+?)"').findall(url)[0].replace('player.json','manifest.f4m')
+            hosting_id = re.compile('http://config.playwire.com/(.+?)/videos').findall(url)[0]
+            link = urllib2.urlopen(manifest_link).read()
+            newlink = ''.join(link.splitlines()).replace('\t','')
+            base_url = re.compile('<baseURL>(.+?)</baseURL>').findall(newlink)[0]
+            if newlink.find('video-hd.mp4?hosting_id=')!=-1:
+                media_id = '/video-hd.mp4?hosting_id='+hosting_id
             else:
-                sCode=vCode[0]
-            real_link = playwire_base_url+publisherId+'/'+str(sCode)
-        elif str(f4m_src).find('rtmp://streaming')!=-1:
-            real_link = str(f4m_src).replace('rtmp://streaming','http://cdn').replace('mp4:','')
-
-        return real_link
+                media_id='/video-sd.mp4?hosting_id='+hosting_id
+            real_link = base_url+media_id
+            return real_link
     except:pass
 
 
