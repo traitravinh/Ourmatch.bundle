@@ -8,7 +8,7 @@ BASE_URL = "http://ourmatch.net"
 playwire_base_url='http://cdn.playwire.com/'
 default_ico = 'icon-default.png'
 ##### REGEX #####
-RE_MENU = Regex('<div class="division">(.+?)<div id="ad-right">')
+RE_MENU = Regex('<div class="division">(.+?)<div class="ads_mid">')
 RE_INDEX = Regex('<div id="main-content">(.+?)<footer id="footer">')
 RE_PAGE = Regex('<div class="loop-nav pag-nav">(.+?)<footer id="footer">')
 RE_IFRAME = Regex('<div id="main-content">(.+?)<iframe src=')
