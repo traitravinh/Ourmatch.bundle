@@ -188,7 +188,9 @@ def retrievVideoLink(url):
             return real_link
         else:
             manifest_link = re.compile('data-config="(.+?)"').findall(url)[0].replace('player.json','manifest.f4m')
-            hosting_id = re.compile('http://config.playwire.com/(.+?)/videos').findall(url)[0]
+            hosting_id = re.compile('//config.playwire.com/(.+?)/videos').findall(url)[0]
+            if manifest_link.find('http:')==-1:
+                manifest_link= 'http:'+manifest_link
             link = urllib2.urlopen(manifest_link).read()
             newlink = ''.join(link.splitlines()).replace('\t','')
             base_url = re.compile('<baseURL>(.+?)</baseURL>').findall(newlink)[0]
