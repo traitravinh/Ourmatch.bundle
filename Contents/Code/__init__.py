@@ -11,7 +11,7 @@ default_ico = 'icon-default.png'
 RE_MENU = Regex('<div class="division">(.+?)<div class="ads_mid">')
 RE_INDEX = Regex('<div id="main-content">(.+?)<footer id="footer">')
 RE_PAGE = Regex('<div class="loop-nav pag-nav">(.+?)<footer id="footer">')
-RE_IFRAME = Regex('<div id="main-content">(.+?)<iframe src=')
+RE_IFRAME = Regex('<div id="main-content">(.+?)</div><!-- end #content -->')
 RE_PUBID = Regex('data-publisher-id="(.+?)" data-video-id')
 RE_VIDID = Regex('data-video-id="(.+?)"')
 RE_SRC = Regex('"src":"(.+?)"|\'')
@@ -97,10 +97,11 @@ def Episodes(title, eplink, epthumb):
     newlink = ''.join(link.splitlines()).replace('\t','')
     match = RE_IFRAME.search(newlink).group(1)
     p_tag = BeautifulSoup(str(match))('p')
-
     for p in p_tag:
         ptext = BeautifulSoup(str(p)).p.contents[0]
-        plink = BeautifulSoup(str(p)).p.next.next.next
+        try:
+            plink = BeautifulSoup(str(p)).p.next.next.next
+        except:pass
 
         if str(plink).find('dailymotion')!=-1:
             plink = 'http:'+re.findall(RE_DAILY,str(plink))[0]
@@ -110,21 +111,24 @@ def Episodes(title, eplink, epthumb):
                 thumb=epthumb
             ))
         else:
-            pscritp =retrievVideoLink(str(plink))
-
-            oc.add(createMediaObject(
-                url=pscritp,
-                title=ptext,
-                thumb=epthumb,
-                rating_key=ptext
-            ))
+            try:
+                pscritp =retrievVideoLink(str(plink))
+                oc.add(createMediaObject(
+                    url=pscritp,
+                    title=ptext,
+                    thumb=epthumb,
+                    rating_key=ptext
+                ))
+            except:pass
 
     return oc
 
 @route('/video/ourmatch/createMediaObject')
-def createMediaObject(url, title,thumb,rating_key,include_container=False):
+def createMediaObject(url, title,thumb,rating_key,include_container=False,includeRelatedCount=None,includeRelated=None,includeExtras=None):
+
     Log('<<PLAY VIDEO>> - '+title)
     Log('<<VIDEO LINK>> - '+url)
+
     container = Container.MP4
     video_codec = VideoCodec.H264
     audio_codec = AudioCodec.AAC
@@ -184,7 +188,6 @@ def retrievVideoLink(url):
                 real_link = playwire_base_url+publisherId[0]+'/'+str(sCode)
             elif str(f4m_src[0]).find('rtmp://streaming')!=-1:
                 real_link = str(f4m_src[0]).replace('rtmp://streaming','http://cdn').replace('mp4:','')
-
             return real_link
         else:
             if url.find('player.json')!=-1:
