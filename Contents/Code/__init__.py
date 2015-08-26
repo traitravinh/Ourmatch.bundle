@@ -11,7 +11,7 @@ default_ico = 'icon-default.png'
 RE_MENU = Regex('<div class="division">(.+?)<div class="ads_mid">')
 RE_INDEX = Regex('<div id="main-content">(.+?)<footer id="footer">')
 RE_PAGE = Regex('<div class="loop-nav pag-nav">(.+?)<footer id="footer">')
-RE_IFRAME = Regex('<div id="main-content">(.+?)</div><!-- end #content -->')
+RE_IFRAME = Regex('<div class="video-tabs-labels">(.+?)<aside>')
 RE_PUBID = Regex('data-publisher-id="(.+?)" data-video-id')
 RE_VIDID = Regex('data-video-id="(.+?)"')
 RE_SRC = Regex('"src":"(.+?)"|\'')
@@ -96,11 +96,11 @@ def Episodes(title, eplink, epthumb):
     link = HTTP.Request(eplink,cacheTime=3600).content
     newlink = ''.join(link.splitlines()).replace('\t','')
     match = RE_IFRAME.search(newlink).group(1)
-    p_tag = BeautifulSoup(str(match))('p')
+    p_tag = BeautifulSoup(str(match))('li')
     for p in p_tag:
-        ptext = BeautifulSoup(str(p)).p.contents[0]
         try:
-            plink = BeautifulSoup(str(p)).p.next.next.next
+            ptext = BeautifulSoup(str(p))('a')[0].contents[0]
+            plink = BeautifulSoup(str(p))('li')[0]['data-script-content']
         except:pass
 
         if str(plink).find('dailymotion')!=-1:
