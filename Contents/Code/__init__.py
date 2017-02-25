@@ -11,7 +11,7 @@ default_ico = 'icon-default.png'
 RE_MENU = Regex('<div class="division">(.+?)<div class="ads_mid">')
 RE_INDEX = Regex('<div id="main-content">(.+?)<footer id="footer">')
 RE_PAGE = Regex('<div class="loop-nav pag-nav">(.+?)<footer id="footer">')
-RE_IFRAME = Regex('<div class="video-tabs-labels">(.+?)<aside>')
+RE_IFRAME = Regex('<div id="main-content">(.+?)</div><!-- end #content -->')
 RE_PUBID = Regex('data-publisher-id="(.+?)" data-video-id')
 RE_VIDID = Regex('data-video-id="(.+?)"')
 RE_SRC = Regex('"src":"(.+?)"|\'')
@@ -94,33 +94,16 @@ def Category(title, catelink):
 def Episodes(title, eplink, epthumb):
     oc = ObjectContainer(title2=title)
     link = HTTP.Request(eplink,cacheTime=3600).content
+
     newlink = ''.join(link.splitlines()).replace('\t','')
-    match = RE_IFRAME.search(newlink).group(1)
-    p_tag = BeautifulSoup(str(match))('li')
-    for p in p_tag:
-        try:
-            ptext = BeautifulSoup(str(p))('a')[0].contents[0]
-            plink = BeautifulSoup(str(p))('li')[0]['data-script-content']
-        except:pass
-
-        if str(plink).find('dailymotion')!=-1:
-            plink = 'http:'+re.findall(RE_DAILY,str(plink))[0]
-            oc.add(VideoClipObject(
-                url=plink,
-                title=ptext,
-                thumb=epthumb
-            ))
-        else:
-            try:
-                pscritp =retrievVideoLink(str(plink))
-                oc.add(createMediaObject(
-                    url=pscritp,
-                    title=ptext,
-                    thumb=epthumb,
-                    rating_key=ptext
-                ))
-            except:pass
-
+    vlink = retrievVideoLink(newlink)
+    ptext = 'Highlights'
+    oc.add(createMediaObject(
+        url=vlink,
+        title=ptext,
+        thumb=epthumb,
+        rating_key=ptext
+    ))
     return oc
 
 @route('/video/ourmatch/createMediaObject')
@@ -170,43 +153,9 @@ def PlayVideo(url):
     return IndirectResponse(VideoClipObject, key=url)
 
 def retrievVideoLink(url):
-    try:
-        if str(url).find('data-publisher-id')!=-1:
-            publisherId = re.compile('data-publisher-id="(.+?)" data-video-id').findall(url)
-            videoId = re.compile('data-video-id="(.+?)"').findall(url)
-
-            f4m_link = playwire_base_url+'v2/' + str(publisherId[0])+'/config/'+str(videoId[0])+'.json'
-            link = urllib2.urlopen(f4m_link).read()
-            f4m_src = re.compile('"src":"(.+?)"|\'').findall(str(link))
-            if str(f4m_src[0]).find('.f4m')!=-1:
-                nlink = urllib2.urlopen(f4m_src[0]).read()
-                vCode = re.compile('mp4:(.+?)" ').findall(str(nlink))
-                if len(vCode)>1:
-                    sCode = vCode[1]
-                else:
-                    sCode=vCode[0]
-                real_link = playwire_base_url+publisherId[0]+'/'+str(sCode)
-            elif str(f4m_src[0]).find('rtmp://streaming')!=-1:
-                real_link = str(f4m_src[0]).replace('rtmp://streaming','http://cdn').replace('mp4:','')
-            return real_link
-        else:
-            if url.find('player.json')!=-1:
-                manifest_link = re.compile('data-config="(.+?)"').findall(url)[0].replace('player.json','manifest.f4m')
-            else:
-                manifest_link = re.compile('data-config="(.+?)"').findall(url)[0].replace('zeus.json','manifest.f4m')
-            hosting_id = re.compile('//config.playwire.com/(.+?)/videos').findall(url)[0]
-            if manifest_link.find('http:')==-1:
-                manifest_link= 'http:'+manifest_link
-            link = urllib2.urlopen(manifest_link).read()
-            newlink = ''.join(link.splitlines()).replace('\t','')
-            base_url = re.compile('<baseURL>(.+?)</baseURL>').findall(newlink)[0]
-            if newlink.find('video-hd.mp4?hosting_id=')!=-1:
-                media_id = '/video-hd.mp4?hosting_id='+hosting_id
-            else:
-                media_id='/video-sd.mp4?hosting_id='+hosting_id
-            real_link = base_url+media_id
-            return real_link
-    except:pass
+    sources = re.compile('<source src="(.+?)"></video>').findall(url)
+    finallink = sources[0]
+    return finallink
 
 
 ####################################################################################################
